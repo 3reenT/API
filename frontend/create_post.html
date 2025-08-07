@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Create Post</title>
+  <link rel="stylesheet" href="/frontend/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Create Post</h1>
+      <p class="small">Enter post</p>
+    </header>
+
+    <div class="form-wrap card">
+      <form action="/posts/" method="post">
+        <label for="title">Title</label>
+        <input id="title" name="title" type="text" required placeholder="Post title">
+
+        <label for="content">Content</label>
+        <textarea id="content" name="content" required placeholder="Post content"></textarea>
+
+        <label for="user_id">User ID</label>
+        <input id="user_id" name="user_id" type="number" required placeholder="User ID">
+
+        <div class="actions">
+          <button class="btn-primary" type="submit">Create</button>
+          <a class="btn" href="/frontend/index.html">Back</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
