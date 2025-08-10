@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Posts</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 6px 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #eee;
+        }
+        td.content-cell {
+            max-width: 400px;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+            <td valign="top" style="border-right: 1px solid black; padding-right: 20px;">
+                <p><a href="users.html">Users</a></p>
+                <p><a href="posts.html">Posts</a></p>
+            </td>
+            <td style="padding-left: 20px;">
+                <h1>Posts</h1>
+
+                <table id="posts-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Content</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody id="posts-table-body">
+                        <tr><td colspan="4">Loading posts...</td></tr>
+                    </tbody>
+                </table>
+
+                <h2>Create Post</h2>
+                <form id="create-post-form">
+                    <label>Title<br />
+                        <input type="text" id="title" required />
+                    </label><br />
+
+                    <label>Content<br />
+                        <textarea id="content" rows="4" required></textarea>
+                    </label><br />
+
+                    <label>User ID<br />
+                        <input type="number" id="user_id" required />
+                    </label><br />
+
+                    <button type="submit">Create Post</button>
+                </form>
+            </td>
+        </tr>
+    </table>
+
+<script>
+    const postsTableBody = document.getElementById('posts-table-body');
+    const form = document.getElementById('create-post-form');
+    let usersMap = {};
+
+    async function fetchUsers() {
+        const res = await fetch('/users/');
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const users = await res.json();
+        usersMap = {};
+        users.forEach(user => {
+            usersMap[user.id] = user.username;
+        });
+    }
+
+    async function fetchPosts() {
+        try {
+            await fetchUsers();
+            const res = await fetch('/posts/');
+            if (!res.ok) throw new Error("Failed to fetch posts");
+            const posts = await res.json();
+
+            postsTableBody.innerHTML = '';
+            if(posts.length === 0) {
+                postsTableBody.innerHTML = '<tr><td colspan="4">No posts found.</td></tr>';
+                return;
+            }
+
+            posts.forEach(post => {
+                const username = usersMap[post.user_id] || "Unknown User";
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${post.id}</td>
+                    <td>${post.title}</td>
+                    <td class="content-cell">${post.content}</td>
+                    <td>${username} (ID: ${post.user_id})</td>
+                `;
+                postsTableBody.appendChild(tr);
+            });
+        } catch (error) {
+            postsTableBody.innerHTML = `<tr><td colspan="4" style="color:red;">${error.message}</td></tr>`;
+            console.error(error);
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+        const user_id = Number(document.getElementById('user_id').value);
+
+        if (!title || !content || !user_id) {
+            alert('Please fill all fields.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/posts/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({title, content, user_id}),
+            });
+
+            if (!res.ok) {
+                const error = await res.json();
+                alert(error.detail || 'Failed to create post');
+                return;
+            }
+
+            form.reset();
+            fetchPosts();
+        } catch (error) {
+            alert("Error: " + error.message);
+            console.error(error);
+        }
+    });
+
+    window.onload = fetchPosts;
+</script>
+</body>
+</html>

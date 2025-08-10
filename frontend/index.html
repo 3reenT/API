@@ -1,40 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Home</title>
-  <link rel="stylesheet" href="/frontend/style.css">
+    <meta charset="UTF-8" />
+    <title>Home Page</title>
+    <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1>API Application</h1>
-    </header>
-
-    <main>
-      <div class="grid">
-        <div class="card">
-          <h3>Create User</h3>
-          <a class="btn-primary" href="/frontend/create_user.html">Open</a>
-        </div>
-
-        <div class="card">
-          <h3>Create Post</h3>
-          <a class="btn-primary" href="/frontend/create_post.html">Open</a>
-        </div>
-
-        <div class="card">
-          <h3>Show All Users</h3>
-          <a class="btn-primary" href="/frontend/show_users.html">Open</a>
-        </div>
-
-        <div class="card">
-          <h3>Show All Posts</h3>
-          <a class="btn-primary" href="/frontend/show_posts.html">Open</a>
-        </div>
-      </div>
-    </main>
-  </div>
+    <table>
+        <tr>
+            <td valign="top" style="border-right: 1px solid black; padding-right: 20px;">
+                <p><a href="/static/users.html">Users</a></p>
+                <p><a href="/static/posts.html">Posts</a></p>
+            </td>
+            <td style="padding-left: 20px;">
+                <h1>Welcome to My Application</h1>
+                <p>Select "Users" or "Posts"</p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
