@@ -68,84 +68,103 @@
         </tr>
     </table>
 
-<script>
-    const postsTableBody = document.getElementById('posts-table-body');
-    const form = document.getElementById('create-post-form');
-    let usersMap = {};
+<script type="module">
+  import { fetchUsers } from './fetchUsers.js';
 
-    async function fetchUsers() {
-        const res = await fetch('/users/');
-        if (!res.ok) throw new Error("Failed to fetch users");
-        const users = await res.json();
-        usersMap = {};
-        users.forEach(user => {
-            usersMap[user.id] = user.username;
-        });
+  const postsTableBody = document.getElementById('posts-table-body');
+  const form = document.getElementById('create-post-form');
+  let usersMap = {};
+
+  const username = localStorage.getItem('username');
+  const password = localStorage.getItem('password');
+
+  if (!username || !password) {
+    alert("Please login first.");
+    window.location.href = "/";
+  }
+
+  function getAuthHeaders() {
+    const headers = new Headers();
+    headers.append('Authorization', 'Basic ' + btoa(username + ':' + password));
+    headers.append('Content-Type', 'application/json');
+    return headers;
+  }
+
+  async function fetchAndMapUsers() {
+    try {
+      const users = await fetchUsers(getAuthHeaders());
+      usersMap = {};
+      users.forEach(user => {
+        usersMap[user.id] = user.username;
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function fetchPosts() {
+    try {
+      await fetchAndMapUsers();
+      const res = await fetch('/posts/', { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error("Failed to fetch posts");
+      const posts = await res.json();
+
+      postsTableBody.innerHTML = '';
+      if(posts.length === 0) {
+        postsTableBody.innerHTML = '<tr><td colspan="4">No posts found.</td></tr>';
+        return;
+      }
+
+      posts.forEach(post => {
+        const username = usersMap[post.user_id] || "Unknown User";
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${post.id}</td>
+          <td>${post.title}</td>
+          <td class="content-cell">${post.content}</td>
+          <td>${username} (ID: ${post.user_id})</td>
+        `;
+        postsTableBody.appendChild(tr);
+      });
+    } catch (error) {
+      postsTableBody.innerHTML = `<tr><td colspan="4" style="color:red;">${error.message}</td></tr>`;
+      console.error(error);
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const user_id = Number(document.getElementById('user_id').value);
+
+    if (!title || !content || !user_id) {
+      alert('Please fill all fields.');
+      return;
     }
 
-    async function fetchPosts() {
-        try {
-            await fetchUsers();
-            const res = await fetch('/posts/');
-            if (!res.ok) throw new Error("Failed to fetch posts");
-            const posts = await res.json();
+    try {
+      const res = await fetch('/posts/', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({title, content, user_id}),
+      });
 
-            postsTableBody.innerHTML = '';
-            if(posts.length === 0) {
-                postsTableBody.innerHTML = '<tr><td colspan="4">No posts found.</td></tr>';
-                return;
-            }
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.detail || 'Failed to create post');
+        return;
+      }
 
-            posts.forEach(post => {
-                const username = usersMap[post.user_id] || "Unknown User";
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${post.id}</td>
-                    <td>${post.title}</td>
-                    <td class="content-cell">${post.content}</td>
-                    <td>${username} (ID: ${post.user_id})</td>
-                `;
-                postsTableBody.appendChild(tr);
-            });
-        } catch (error) {
-            postsTableBody.innerHTML = `<tr><td colspan="4" style="color:red;">${error.message}</td></tr>`;
-            console.error(error);
-        }
+      form.reset();
+      fetchPosts();
+    } catch (error) {
+      alert("Error: " + error.message);
+      console.error(error);
     }
+  });
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const title = document.getElementById('title').value.trim();
-        const content = document.getElementById('content').value.trim();
-        const user_id = Number(document.getElementById('user_id').value);
-
-        if (!title || !content || !user_id) {
-            alert('Please fill all fields.');
-            return;
-        }
-
-        try {
-            const res = await fetch('/posts/', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({title, content, user_id}),
-            });
-
-            if (!res.ok) {
-                const error = await res.json();
-                alert(error.detail || 'Failed to create post');
-                return;
-            }
-
-            form.reset();
-            fetchPosts();
-        } catch (error) {
-            alert("Error: " + error.message);
-            console.error(error);
-        }
-    });
-
-    window.onload = fetchPosts;
+  window.onload = fetchPosts;
 </script>
 </body>
 </html>
