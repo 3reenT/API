@@ -5,6 +5,8 @@ import models
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 models.Base.metadata.create_all(bind=engine)

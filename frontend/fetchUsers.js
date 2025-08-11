@@ -1,11 +1,12 @@
-export async function fetchUsers(authHeaders = null) {
-  const options = {};
-  if (authHeaders) {
-    options.headers = authHeaders;
-  }
+let usersMap = {}; 
 
-  const res = await fetch('/users/', options);
-  if (!res.ok) throw new Error('Failed to fetch users');
-  const users = await res.json();
-  return users;
+async function fetchUsers() {
+    const res = await fetch('/users/');
+    if (!res.ok) throw new Error("Failed to fetch users");
+    const users = await res.json();
+    usersMap = {};
+    users.forEach(user => {
+        usersMap[user.id] = user.username;
+    });
+    return users; 
 }

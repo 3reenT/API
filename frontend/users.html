@@ -4,21 +4,33 @@
     <meta charset="UTF-8" />
     <title>Users</title>
     <link rel="stylesheet" href="/static/style.css" />
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 6px 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #eee;
+        }
+    </style>
 </head>
 <body>
     <table>
         <tr>
-            <!-- الشريط الجانبي بالضبط مثل index.html -->
             <td valign="top" style="border-right: 1px solid black; padding-right: 20px;">
                 <p><a href="users.html">Users</a></p>
                 <p><a href="posts.html">Posts</a></p>
             </td>
-
-            <!-- المحتوى -->
             <td style="padding-left: 20px;">
                 <h1>Users</h1>
 
-                <table id="users-table" border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; font-size: 14px;">
+                <table id="users-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -26,28 +38,34 @@
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
-                        <!-- Users data will be injected here -->
+                        <tr><td colspan="2">Loading users...</td></tr>
                     </tbody>
                 </table>
 
                 <h2>Create User</h2>
                 <form id="create-user-form">
-                    <input type="text" id="username" placeholder="Username" required />
+                    <label>Username<br />
+                        <input type="text" id="username" required />
+                    </label><br />
                     <button type="submit">Create User</button>
                 </form>
             </td>
         </tr>
     </table>
 
-    <script>
-        const usersTableBody = document.getElementById('users-table-body');
-        const form = document.getElementById('create-user-form');
+<script src="/static/fetchUsers.js"></script>
+<script>
+    const usersTableBody = document.getElementById('users-table-body');
+    const form = document.getElementById('create-user-form');
 
-        async function fetchUsers() {
-            const res = await fetch('/users/');
-            const users = await res.json();
-
+    async function renderUsers() {
+        try {
+            const users = await fetchUsers();  // من fetchUsers.js
             usersTableBody.innerHTML = '';
+            if(users.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="2">No users found.</td></tr>';
+                return;
+            }
             users.forEach(user => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -56,12 +74,21 @@
                 `;
                 usersTableBody.appendChild(tr);
             });
+        } catch (error) {
+            usersTableBody.innerHTML = `<tr><td colspan="2" style="color:red;">${error.message}</td></tr>`;
+            console.error(error);
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        if (!username) {
+            alert('Please enter a username.');
+            return;
         }
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-
+        try {
             const res = await fetch('/users/', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -71,14 +98,18 @@
             if (res.ok) {
                 alert('User created!');
                 form.reset();
-                fetchUsers();
+                renderUsers();
             } else {
-                alert('Failed to create user');
+                const error = await res.json();
+                alert(error.detail || 'Failed to create user');
             }
-        });
+        } catch (error) {
+            alert("Error: " + error.message);
+            console.error(error);
+        }
+    });
 
-        // load users on page load
-        fetchUsers();
-    </script>
+    window.onload = renderUsers;
+</script>
 </body>
 </html>

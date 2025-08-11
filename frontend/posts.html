@@ -68,20 +68,11 @@
         </tr>
     </table>
 
+<script src="/static/fetchUsers.js"></script>
 <script>
     const postsTableBody = document.getElementById('posts-table-body');
     const form = document.getElementById('create-post-form');
-    let usersMap = {};
-
-    async function fetchUsers() {
-        const res = await fetch('/users/');
-        if (!res.ok) throw new Error("Failed to fetch users");
-        const users = await res.json();
-        usersMap = {};
-        users.forEach(user => {
-            usersMap[user.id] = user.username;
-        });
-    }
+    // usersMap موجودة في common.js
 
     async function fetchPosts() {
         try {
