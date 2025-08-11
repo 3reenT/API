@@ -4,26 +4,17 @@
     <meta charset="UTF-8" />
     <title>Users</title>
     <link rel="stylesheet" href="/static/style.css" />
-    <style>
-        input[type="text"], input[type="password"] {
-            width: 200px;
-            padding: 5px;
-            margin-bottom: 10px;
-        }
-        button {
-            padding: 6px 12px;
-            cursor: pointer;
-        }
-    </style>
 </head>
 <body>
     <table>
         <tr>
+            <!-- الشريط الجانبي بالضبط مثل index.html -->
             <td valign="top" style="border-right: 1px solid black; padding-right: 20px;">
                 <p><a href="users.html">Users</a></p>
                 <p><a href="posts.html">Posts</a></p>
             </td>
 
+            <!-- المحتوى -->
             <td style="padding-left: 20px;">
                 <h1>Users</h1>
 
@@ -35,81 +26,59 @@
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
+                        <!-- Users data will be injected here -->
                     </tbody>
                 </table>
 
                 <h2>Create User</h2>
                 <form id="create-user-form">
                     <input type="text" id="username" placeholder="Username" required />
-                    <br />
-                    <input type="password" id="password" placeholder="Password" required />
-                    <br />
                     <button type="submit">Create User</button>
                 </form>
             </td>
         </tr>
     </table>
 
-<script type="module">
-  import { fetchUsers } from './fetchUsers.js';
+    <script>
+        const usersTableBody = document.getElementById('users-table-body');
+        const form = document.getElementById('create-user-form');
 
-  const loggedUsername = localStorage.getItem("username");
-  const role = localStorage.getItem("role"); 
+        async function fetchUsers() {
+            const res = await fetch('/users/');
+            const users = await res.json();
 
-  if (!loggedUsername) {
-    alert("Please login first.");
-    window.location.href = "/";
-  } else if (role !== "admin") {
-    document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px;'>Access Denied: You do not have permission to view this page.</h2>";
-  } else {
-    const usersTableBody = document.getElementById('users-table-body');
-    const form = document.getElementById('create-user-form');
+            usersTableBody.innerHTML = '';
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                `;
+                usersTableBody.appendChild(tr);
+            });
+        }
 
-    async function loadUsers() {
-      try {
-        const users = await fetchUsers();
-        usersTableBody.innerHTML = '';
-        users.forEach(user => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${user.id}</td>
-            <td>${user.username}</td>
-          `;
-          usersTableBody.appendChild(tr);
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+
+            const res = await fetch('/users/', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username})
+            });
+
+            if (res.ok) {
+                alert('User created!');
+                form.reset();
+                fetchUsers();
+            } else {
+                alert('Failed to create user');
+            }
         });
-      } catch {
-        alert("Failed to fetch users");
-      }
-    }
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!username || !password) {
-        alert("Please enter both username and password");
-        return;
-      }
-
-      const res = await fetch('/users/', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, password})
-      });
-
-      if (res.ok) {
-        alert('User created!');
-        form.reset();
-        loadUsers();
-      } else {
-        const errorData = await res.json();
-        alert('Failed to create user: ' + (errorData.detail || res.statusText));
-      }
-    });
-
-    loadUsers();
-  }
-</script>
+        // load users on page load
+        fetchUsers();
+    </script>
 </body>
 </html>
