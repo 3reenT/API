@@ -7,6 +7,16 @@ from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from passlib.context import CryptContext
+from pydantic import BaseModel
+from enum import Enum
+from passlib.context import CryptContext
+from fastapi import Form
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(password: str):
+    return pwd_context.hash(password)
 
 app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
@@ -15,9 +25,15 @@ class PostBase(BaseModel):
     title: str
     content: str
     user_id: int
+    
+class RoleEnum(str, Enum):
+    admin = "admin"
+    user = "user"
 
 class UserBase(BaseModel):
     username: str
+    password: str  
+    role: RoleEnum
 
 class PostUpdate(BaseModel):
     title: Optional[str] = None
@@ -39,14 +55,35 @@ async def read_index():
     with open("frontend/index.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
-# Mount static files from 'frontend' folder at /static path
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
-# API routes
+
+@app.post("/login")
+async def login(
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    if not pwd_context.verify(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    if user.role == "admin":
+        return {"message": f"Welcome Admin {user.username}"}
+    else:
+        return {"message": f"Welcome User {user.username}"}
 
 @app.post("/users/", status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserBase, db: db_dependency):
-    db_user = models.User(username=user.username)
+async def create_user(user: UserBase, db: Session = Depends(get_db)):
+    hashed_password = hash_password(user.password)
+    db_user = models.User(
+        username=user.username,
+        password_hash=hashed_password,
+        role=user.role  
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
