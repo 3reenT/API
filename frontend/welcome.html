@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Welcome Page</title>
+
+    <link rel="stylesheet" href="/static/sidebar.css" />
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #ecf0f1;
+        }
+        .welcome-box {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 600px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .welcome-box h2 {
+            color: #27ae60;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .welcome-box p {
+            color: #555;
+            line-height: 1.6;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <h3>Menu</h3>
+        </div>
+
+        <div class="content">
+            <div class="welcome-box">
+                <h2>Welcome, <span id="username"></span>!</h2>
+                <p>You have successfully logged in</p>
+                <p>Use the menu on the left</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const username = localStorage.getItem('username') || 'User';
+        document.getElementById('username').textContent = username;
+    </script>
+
+    <script src="/static/sidebar.js"></script>
+</body>
+</html>
