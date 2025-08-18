@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Users</title>
-
-    <link rel="stylesheet" href="/static/sidebar.css" />
     <link rel="stylesheet" href="/static/style.css" />
-
     <style>
         table {
             border-collapse: collapse;
@@ -21,110 +18,49 @@
         th {
             background-color: #eee;
         }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 200px !important;
-            padding: 6px !important;
-            border: 1px solid #333 !important;
-            border-radius: 4px !important;
-            font-family: inherit !important;
-            font-size: inherit !important;
-            background-color: white !important;
-            box-sizing: border-box !important;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0,0,0,0.03);
-            border-color: #666;
-        }
-
-        .content {
-            padding: 20px;
-            margin-left: 220px; 
-        }
-
-        h1, h2 {
-            margin-top: 0;
-        }
     </style>
 </head>
 <body>
+    <table>
+        <tr>
+            <td valign="top" style="border-right: 1px solid black; padding-right: 20px;">
+                <p><a href="users.html">Users</a></p>
+                <p><a href="posts.html">Posts</a></p>
+            </td>
+            <td style="padding-left: 20px;">
+                <h1>Users</h1>
 
-<script>
-    const role = localStorage.getItem("role");
-    if (role !== "admin") {
-        alert("Access denied: Admins only");
-        window.location.href = "/";
-    }
-</script>
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr><td colspan="2">Loading users...</td></tr>
+                    </tbody>
+                </table>
 
-<div class="container">
-    <div class="sidebar" id="sidebar"></div>
+                <h2>Create User</h2>
+                <form id="create-user-form">
+                    <label>Username<br />
+                        <input type="text" id="username" required />
+                    </label><br />
+                    <button type="submit">Create User</button>
+                </form>
+            </td>
+        </tr>
+    </table>
 
-    <div class="content">
-        <h1>Users</h1>
-
-        <table id="users-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                </tr>
-            </thead>
-            <tbody id="users-table-body">
-                <tr><td colspan="2">Loading users...</td></tr>
-            </tbody>
-        </table>
-
-        <h2>Create User</h2>
-        <form id="create-user-form">
-            <label>Username<br />
-                <input type="text" id="username" required />
-            </label><br />
-            <label>Password<br />
-                <input type="password" id="password" required />
-            </label><br />
-            <label>Role<br />
-                <select id="role" required>
-                    <option value="user" selected>User</option>
-                    <option value="admin">Admin</option>
-                </select>
-            </label><br />
-            <button type="submit">Create User</button>
-        </form>
-    </div>
-</div>
-
-<script src="/static/sidebar.js"></script>
-
+<script src="/static/fetchUsers.js"></script>
 <script>
     const usersTableBody = document.getElementById('users-table-body');
     const form = document.getElementById('create-user-form');
-    const passwordInput = document.getElementById('password');
-    const token = localStorage.getItem('token'); 
-
-    if (!token) {
-        alert("You must login first");
-        window.location.href = "/";
-    }
-
-    async function fetchUsers() {
-        const res = await fetch('/users/', {
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer ' + token
-            }
-        });
-        if (!res.ok) throw new Error('Failed to fetch users');
-        return res.json();
-    }
 
     async function renderUsers() {
         try {
-            const users = await fetchUsers(); 
+            const users = await fetchUsers();  // من fetchUsers.js
             usersTableBody.innerHTML = '';
             if(users.length === 0) {
                 usersTableBody.innerHTML = '<tr><td colspan="2">No users found.</td></tr>';
@@ -147,22 +83,16 @@
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value.trim();
-        const password = passwordInput.value.trim();
-        const role = document.getElementById('role').value;
-
-        if (!username || !password) {
-            alert('Please enter both username and password.');
+        if (!username) {
+            alert('Please enter a username.');
             return;
         }
 
         try {
             const res = await fetch('/users/', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token 
-                },
-                body: JSON.stringify({ username, password, role })
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username})
             });
 
             if (res.ok) {

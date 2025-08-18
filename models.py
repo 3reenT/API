@@ -5,22 +5,13 @@ from database import Base
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
 from database import Base
-import enum
-from sqlalchemy import Enum
 
 print("Base from database =", Base)
-
-
-class RoleEnum(str, enum.Enum):
-    admin = "admin"
-    user = "user"
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), nullable=False)
-    password_hash = Column(String(100), nullable=False)  
-    role = Column(Enum(RoleEnum), nullable=False)  
+    username = Column(String(50))
     posts = relationship("Post", back_populates="owner")
 
 class Post(Base):
