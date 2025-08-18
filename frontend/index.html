@@ -88,14 +88,15 @@
                 if (response.ok) {
                     const data = await response.json();
 
+                    localStorage.setItem("token", data.access_token);
+                    localStorage.setItem("username", username);
+
                     if (data.message && data.message.startsWith("Welcome Admin")) {
-                        localStorage.setItem("username", username);
                         localStorage.setItem("role", "admin");
-                        window.location.href = "/static/welcome.html";
+                        window.location.href = "/static/welcome.html"; 
                     } else if (data.message && data.message.startsWith("Welcome User")) {
-                        localStorage.setItem("username", username);
                         localStorage.setItem("role", "user");
-                        window.location.href = "/static/user_posts.html";
+                        window.location.href = "/static/welcome.html"; 
                     } else {
                         alert(data.message || "Logged in");
                     }

@@ -2,58 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>Admin Welcome</title>
-    <link rel="stylesheet" href="/static/style.css" />
+    <title>Welcome Page</title>
+
+    <link rel="stylesheet" href="/static/sidebar.css" />
+
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             background-color: #ecf0f1;
-        }
-        .container {
-            display: flex;
-            height: 100vh;
-        }
-        .sidebar {
-            width: 220px;
-            background-color: #2c3e50;
-            padding: 20px 0;
-            color: white;
-            position: fixed;
-            height: 100%;
-        }
-        .sidebar h3 {
-            text-align: center;
-            margin-bottom: 20px;
-            font-size: 20px;
-            color: #ecf0f1;
-            letter-spacing: 1px;
-        }
-        .sidebar a {
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            transition: background-color 0.3s;
-            font-size: 15px;
-        }
-        .sidebar a:hover {
-            background-color: #34495e;
-        }
-        .sidebar a i {
-            margin-right: 10px;
-        }
-        .content {
-            flex: 1;
-            padding: 40px;
-            background-color: #ecf0f1;
-            margin-left: 220px;
-            overflow-y: auto;
-        }
-        h1 {
-            margin-top: 0;
-            color: #2c3e50;
         }
         .welcome-box {
             background-color: white;
@@ -77,27 +34,29 @@
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
+
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="container">
-        <div class="sidebar">
-            <h3>Admin Panel</h3>
-            <a href="/static/users.html"><i class="fas fa-users"></i> Users</a>
-            <a href="/static/posts.html"><i class="fas fa-file-alt"></i> Posts</a>
+        <div class="sidebar" id="sidebar">
+            <h3>Menu</h3>
         </div>
 
         <div class="content">
             <div class="welcome-box">
-                <h2>Welcome, Admin!</h2>
-                <p>
-                    You have successfully logged in as an Admin<br />
-                </p>
-                <p>
-                    Use the menu on the left
-                </p>
+                <h2>Welcome, <span id="username"></span>!</h2>
+                <p>You have successfully logged in</p>
+                <p>Use the menu on the left</p>
             </div>
         </div>
     </div>
+
+    <script>
+        const username = localStorage.getItem('username') || 'User';
+        document.getElementById('username').textContent = username;
+    </script>
+
+    <script src="/static/sidebar.js"></script>
 </body>
 </html>

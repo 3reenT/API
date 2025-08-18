@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <title>Posts</title>
+
+    <link rel="stylesheet" href="/static/sidebar.css" />
     <link rel="stylesheet" href="/static/style.css" />
+
     <style>
         table {
             border-collapse: collapse;
@@ -22,61 +25,100 @@
             max-width: 400px;
             word-wrap: break-word;
         }
+
+        .content {
+            padding: 20px;
+            margin-left: 220px; 
+        }
+
+        h1, h2 {
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
-    <table>
-        <tr>
-            <td valign="top" style="border-right: 1px solid black; padding-right: 20px;">
-                <p><a href="users.html">Users</a></p>
-                <p><a href="posts.html">Posts</a></p>
-            </td>
-            <td style="padding-left: 20px;">
-                <h1>Posts</h1>
+<script>
+    const role = localStorage.getItem("role");
+    const token = localStorage.getItem("token");
 
-                <table id="posts-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Content</th>
-                            <th>User</th>
-                        </tr>
-                    </thead>
-                    <tbody id="posts-table-body">
-                        <tr><td colspan="4">Loading posts...</td></tr>
-                    </tbody>
-                </table>
+    if (!token) {
+        alert("You must login first");
+        window.location.href = "/";
+    }
 
-                <h2>Create Post</h2>
-                <form id="create-post-form">
-                    <label>Title<br />
-                        <input type="text" id="title" required />
-                    </label><br />
+    if (role !== "admin") {
+        alert("Access denied: Admins only");
+        window.location.href = "/";
+    }
+</script>
 
-                    <label>Content<br />
-                        <textarea id="content" rows="4" required></textarea>
-                    </label><br />
+<div class="container">
+    <div class="sidebar" id="sidebar"></div>
 
-                    <label>User ID<br />
-                        <input type="number" id="user_id" required />
-                    </label><br />
+    <div class="content">
+        <h1>Posts</h1>
 
-                    <button type="submit">Create Post</button>
-                </form>
-            </td>
-        </tr>
-    </table>
+        <table id="posts-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Content</th>
+                    <th>User</th>
+                </tr>
+            </thead>
+            <tbody id="posts-table-body">
+                <tr><td colspan="4">Loading posts...</td></tr>
+            </tbody>
+        </table>
 
-<script src="/static/fetchUsers.js"></script>
+        <h2>Create Post</h2>
+        <form id="create-post-form">
+            <label>Title<br />
+                <input type="text" id="title" required />
+            </label><br />
+
+            <label>Content<br />
+                <textarea id="content" rows="4" required></textarea>
+            </label><br />
+
+            <label>User ID<br />
+                <input type="number" id="user_id" required />
+            </label><br />
+
+            <button type="submit">Create Post</button>
+        </form>
+    </div>
+</div>
+
+<script src="/static/sidebar.js"></script>
+
 <script>
     const postsTableBody = document.getElementById('posts-table-body');
     const form = document.getElementById('create-post-form');
+    let usersMap = {}; 
+
+    async function fetchUsers() {
+        const res = await fetch('/users/', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const users = await res.json();
+        users.forEach(user => usersMap[user.id] = user.username);
+    }
 
     async function fetchPosts() {
         try {
             await fetchUsers();
-            const res = await fetch('/posts/');
+            const res = await fetch('/posts/', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
             if (!res.ok) throw new Error("Failed to fetch posts");
             const posts = await res.json();
 
@@ -117,7 +159,10 @@
         try {
             const res = await fetch('/posts/', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
                 body: JSON.stringify({title, content, user_id}),
             });
 
