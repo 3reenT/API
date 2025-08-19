@@ -35,13 +35,12 @@
 
 <script src="/static/sidebar.js"></script>
 <script>
-const urlParams = new URLSearchParams(window.location.search);
-const postId = urlParams.get("post_id");
+const postId = localStorage.getItem("selected_post_id"); 
 const token = localStorage.getItem("token");
 const role = localStorage.getItem("role");
 const username = localStorage.getItem("username");
 
-if(!token){ window.location.href = '/'; }
+if(!token || !postId){ window.location.href = '/'; }
 
 const postDetailsDiv = document.getElementById("postDetails");
 const updateForm = document.getElementById("updateForm");

@@ -115,11 +115,23 @@ async def logout(response: Response):
     return {"message": "Logged out successfully"}
 
 @app.post("/users/", status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserBase, db: db_dependency, current_user: models.User = Depends(get_current_user)):
+async def create_user(
+    user: UserBase, 
+    db: db_dependency, 
+    current_user: models.User = Depends(get_current_user)
+):
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admins only")
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Access denied: Only admins can create new users"
+        )
+
     hashed_password = hash_password(user.password)
-    db_user = models.User(username=user.username, password_hash=hashed_password, role=user.role)
+    db_user = models.User(
+        username=user.username, 
+        password_hash=hashed_password, 
+        role=user.role
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -127,19 +139,40 @@ async def create_user(user: UserBase, db: db_dependency, current_user: models.Us
 
 
 @app.get("/users/{user_id}", status_code=status.HTTP_200_OK)
-async def read_user(user_id: int, db: db_dependency, current_user: models.User = Depends(get_current_user)):
+async def read_user(
+    user_id: int, 
+    db: db_dependency, 
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Access denied: Only admins can view user details"
+        )
+
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 @app.get("/user_posts/{username}")
-async def get_user_posts(username: str, db: Session = Depends(get_db)):
+async def get_user_posts(
+    username: str, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if current_user.role != "admin" and current_user.username != username:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Access denied: You can only view your own posts"
+        )
+
     posts = db.query(models.Post).filter(models.Post.user_id == user.id).all()
     return posts
+
 
 @app.get("/users/", status_code=status.HTTP_200_OK)
 async def get_all_users(
@@ -174,13 +207,27 @@ async def read_post(post_id: int, current_user: models.User = Depends(get_curren
 async def get_me(current_user: models.User = Depends(get_current_user)):
     return {"username": current_user.username}
 
-
 @app.post("/posts/", status_code=status.HTTP_201_CREATED)
-async def create_post(post: PostBase, db: db_dependency):
+async def create_post(
+    post: PostBase, 
+    db: db_dependency, 
+    current_user: models.User = Depends(get_current_user)
+):
+    if current_user.id != post.user_id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=403, 
+            detail="You can only create posts for yourself"
+        )
+
     user = db.query(models.User).filter(models.User.id == post.user_id).first()
     if not user:
         raise HTTPException(status_code=400, detail="User ID does not exist")
-    db_post = models.Post(title=post.title, content=post.content, user_id=post.user_id)
+
+    db_post = models.Post(
+        title=post.title, 
+        content=post.content, 
+        user_id=post.user_id
+    )
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
@@ -188,28 +235,49 @@ async def create_post(post: PostBase, db: db_dependency):
 
 
 @app.put("/posts/{post_id}", status_code=status.HTTP_200_OK)
-async def update_post(post_id: int, updated_post: PostUpdate, db: db_dependency):
+async def update_post(
+    post_id: int, 
+    updated_post: PostUpdate, 
+    db: db_dependency, 
+    current_user: models.User = Depends(get_current_user)
+):
     db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
+    
+    if db_post.user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not allowed to update this post")
+
     if updated_post.title is not None:
         db_post.title = updated_post.title
     if updated_post.content is not None:
         db_post.content = updated_post.content
     if updated_post.user_id is not None:
+        if current_user.role != "admin":  
+            raise HTTPException(status_code=403, detail="Only admin can reassign post owner")
         user = db.query(models.User).filter(models.User.id == updated_post.user_id).first()
         if not user:
             raise HTTPException(status_code=400, detail="User ID does not exist")
         db_post.user_id = updated_post.user_id
+
     db.commit()
     db.refresh(db_post)
     return db_post
-
+    
+    
 @app.delete("/posts/{post_id}", status_code=status.HTTP_200_OK)
-async def delete_post(post_id: int, db: db_dependency):
+async def delete_post(
+    post_id: int, 
+    db: db_dependency, 
+    current_user: models.User = Depends(get_current_user)
+):
     db_post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if not db_post:
         raise HTTPException(status_code=404, detail="Post not found")
+
+    if db_post.user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not allowed to delete this post")
+
     db.delete(db_post)
     db.commit()
     return {"detail": "Post deleted"}

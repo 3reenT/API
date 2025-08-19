@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const username = localStorage.getItem('username') || 'User';
-    const role = localStorage.getItem('role') || 'user';
+    const username = localStorage.getItem('username');
+    const role = localStorage.getItem('role');
     const sidebar = document.getElementById('sidebar');
 
     let menu = `<h3>Menu</h3>`;
@@ -12,8 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     } else {
         menu += `
-            <a href="/static/create_post.html"><i class="fas fa-plus"></i> Users</a>
-            <a href="/static/user_posts.html?username=${encodeURIComponent(username)}"><i class="fas fa-file-alt"></i> Posts</a>
+            <a href="/static/user_posts.html"><i class="fas fa-file-alt"></i> Posts</a>
         `;
     }
 
@@ -21,19 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="menu-items">
             ${menu}
         </div>
-        <div class="logout-dropdown">
-            <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Log out</button>
-            <div class="dropdown-content" id="logout-menu">
-                <p><i class="fas fa-user"></i> ${username}</p>
-                <a href="#" id="confirm-logout"><i class="fas fa-sign-out-alt"></i> Log out</a>
-            </div>
+        <div class="user-info">
+            <p>${username}</p>
+            <a href="#" id="confirm-logout"><i class="fas fa-sign-out-alt"></i> Log out</a>
         </div>
     `;
-
-    document.getElementById('logout-btn').addEventListener('click', (e) => {
-        e.preventDefault();
-        document.getElementById('logout-menu').classList.toggle('show');
-    });
 
     document.getElementById('confirm-logout').addEventListener('click', async (e) => {
         e.preventDefault();

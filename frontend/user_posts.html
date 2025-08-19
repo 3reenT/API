@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -126,7 +126,8 @@ function renderPostsTable(posts){
             ${role === "admin" ? `<td>${usersMap[post.user_id] || "Unknown"} (ID: ${post.user_id})</td>` : ""}
         `;
         tr.addEventListener("click", ()=>{
-            window.location.href = `/static/post_detail.html?post_id=${post.id}`;
+            localStorage.setItem("selected_post_id", post.id); 
+            window.location.href = "/static/post_detail.html"; 
         });
         tbody.appendChild(tr);
     });
@@ -140,7 +141,7 @@ async function fetchPosts(){
         if(role === "admin"){
             url = '/posts/';
         } else {
-            url = `/user_posts/${username}`;
+            url = `/user_posts/${localStorage.getItem("username")}`;
         }
 
         const res = await fetch(url, {
