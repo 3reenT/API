@@ -35,12 +35,8 @@
 
 <script src="/static/sidebar.js"></script>
 <script>
-const postId = localStorage.getItem("selected_post_id"); 
-const token = localStorage.getItem("token");
-const role = localStorage.getItem("role");
-const username = localStorage.getItem("username");
-
-if(!token || !postId){ window.location.href = '/'; }
+const postId = sessionStorage.getItem("selected_post_id"); 
+if(!postId){ window.location.href = '/'; }
 
 const postDetailsDiv = document.getElementById("postDetails");
 const updateForm = document.getElementById("updateForm");
@@ -48,9 +44,7 @@ const deleteBtn = document.getElementById("deleteBtn");
 
 async function fetchPost(){
   try{
-    const res = await fetch(`/posts/${postId}`, {
-      headers: { 'Authorization':'Bearer '+token }
-    });
+    const res = await fetch(`/posts/${postId}`);
     if(!res.ok) throw new Error("Failed to fetch post");
     const post = await res.json();
 
@@ -76,10 +70,7 @@ updateForm.addEventListener("submit", async(e)=>{
   try{
     const res = await fetch(`/posts/${postId}`, {
       method:"PUT",
-      headers:{
-        "Content-Type":"application/json",
-        "Authorization":"Bearer "+token
-      },
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ title, content })
     });
 
@@ -99,10 +90,7 @@ updateForm.addEventListener("submit", async(e)=>{
 deleteBtn.addEventListener("click", async()=>{
   if(!confirm("Are you sure you want to delete this post?")) return;
   try{
-    const res = await fetch(`/posts/${postId}`, {
-      method:"DELETE",
-      headers:{ "Authorization":"Bearer "+token }
-    });
+    const res = await fetch(`/posts/${postId}`, { method:"DELETE" });
 
     if(!res.ok){
       const errData = await res.json();
