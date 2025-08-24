@@ -262,10 +262,15 @@ async def get_user_posts(
     return posts
 
 @app.get("/posts/{post_id}", status_code=status.HTTP_200_OK)
-async def read_post(post_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def read_post(
+    post_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     post = get_post_by_id(db, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
+    check_ownership_or_admin(current_user, post.user_id)
     return post
 
 
