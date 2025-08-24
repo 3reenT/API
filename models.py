@@ -10,7 +10,6 @@ from sqlalchemy import Enum
 
 print("Base from database =", Base)
 
-
 class RoleEnum(str, enum.Enum):
     admin = "admin"
     user = "user"

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Users</title>
+
+    <link rel="stylesheet" href="/static/sidebar.css" />
+    <link rel="stylesheet" href="/static/style.css" />
+
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 6px 10px;
+            text-align: left;
+        }
+        th { background-color: #eee; }
+        .content { padding: 20px; margin-left: 220px; }
+        h1, h2 { margin-top: 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="sidebar" id="sidebar"></div>
+
+    <div class="content">
+        <h1>Users</h1>
+
+        <table id="users-table">
+            <thead>
+                <tr><th>ID</th><th>Username</th></tr>
+            </thead>
+            <tbody id="users-table-body">
+                <tr><td colspan="2">Loading users...</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Create User</h2>
+        <form id="create-user-form">
+            <label>Username<br /><input type="text" id="username" required /></label><br />
+            <label>Password<br /><input type="password" id="password" required /></label><br />
+            <label>Role<br />
+                <select id="role" required>
+                    <option value="user" selected>User</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </label><br />
+            <button type="submit">Create User</button>
+        </form>
+    </div>
+</div>
+
+<script src="/static/sidebar.js"></script>
+<script src="/static/fetchUsers.js"></script> 
+
+<script>
+    const usersTableBody = document.getElementById('users-table-body');
+    const form = document.getElementById('create-user-form');
+    const passwordInput = document.getElementById('password');
+
+    async function renderUsers() {
+        try {
+            const users = await fetchUsers();   
+            usersTableBody.innerHTML = '';
+            if(users.length === 0) {
+                usersTableBody.innerHTML = '<tr><td colspan="2">No users found.</td></tr>';
+                return;
+            }
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${user.id}</td><td>${user.username}</td>`;
+                usersTableBody.appendChild(tr);
+            });
+        } catch (error) {
+            usersTableBody.innerHTML = `<tr><td colspan="2" style="color:red;">${error.message}</td></tr>`;
+            console.error(error);
+        }
+    }
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        const password = passwordInput.value.trim();
+        const role = document.getElementById('role').value;
+
+        if (!username || !password) {
+            alert('Please enter both username and password.');
+            return;
+        }
+
+        try {
+            const res = await fetch('/users/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ username, password, role })
+            });
+
+            if (res.ok) {
+                alert('User created!');
+                form.reset();
+                renderUsers();
+            } else {
+                const error = await res.json();
+                alert(error.detail || 'Failed to create user');
+            }
+        } catch (error) {
+            alert("Error: " + error.message);
+            console.error(error);
+        }
+    });
+
+    window.onload = renderUsers;
+</script>
+</body>
+</html>

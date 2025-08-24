@@ -55,6 +55,7 @@
 </div>
 
 <script src="/static/sidebar.js"></script>
+<script src="/static/fetchUsers.js"></script> 
 <script>
 let role = null;
 let username = null;
@@ -80,19 +81,10 @@ async function fetchCurrentUser(){
     }
 }
 
-async function fetchUsers(){
-    try{
-        const res = await fetch('/users/', { credentials: 'include' });
-        if(!res.ok) throw new Error("Failed to fetch users");
-        const users = await res.json();
-        usersMap = {};
-        users.forEach(user => { usersMap[user.id] = user.username; });
-        return users;
-    }catch(err){
-        console.error(err);
-        usersMap = {};
-        return [];
-    }
+async function fetchUsersAndMap(){
+    const users = await fetchUsers(); 
+    usersMap = {};
+    users.forEach(user => { usersMap[user.id] = user.username; });
 }
 
 function renderPostsTable(posts){
@@ -131,7 +123,7 @@ function renderPostsTable(posts){
 async function fetchPosts(){
     try{
         if(role === "admin"){
-            await fetchUsers(); 
+            await fetchUsersAndMap(); 
         }
 
         const url = (role === "admin") ? '/posts/' : `/user_posts/${username}`;
