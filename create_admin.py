@@ -5,7 +5,7 @@ from main import hash_password, generate_email
 def create_admin():
     db = SessionLocal()
     try:
-        username = "Admin"
+        username = "Admin User"
         password = "admin123"
         email = generate_email(username)
 

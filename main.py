@@ -308,3 +308,4 @@ async def delete_post(post_id: int, db: db_dependency, current_user: models.User
     db.delete(db_post)
     db.commit()
     return {"detail": "Post deleted"}
+
