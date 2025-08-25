@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -40,7 +40,6 @@
     <div class="sidebar" id="sidebar"></div>
     <div class="content">
         <h1>Posts</h1>
-
         <div id="postsContainer">
             <p class="loading">Loading posts...</p>
         </div>
@@ -56,50 +55,36 @@
 </div>
 
 <script src="/static/sidebar.js"></script>
+<script src="/static/fetchUsers.js"></script> 
 <script>
-const username = localStorage.getItem("username");
-const token = localStorage.getItem("token");
-const role = localStorage.getItem("role");
-
-if(!username || !token){
-    window.location.href = '/';
-}
-
-if(role !== "admin"){
-    document.getElementById('user-id-label').style.display = 'none';
-}
-
-const postsContainer = document.getElementById('postsContainer');
-const createForm = document.getElementById('create-post-form');
+let role = null;
+let username = null;
 let user_id = null;
 let usersMap = {}; 
+const postsContainer = document.getElementById('postsContainer');
+const createForm = document.getElementById('create-post-form');
 
-async function fetchUserId(){
-    if(role === "user"){
-        try{
-            const res = await fetch(`/users/?username=${username}`, {
-                headers: { 'Authorization':'Bearer '+token }
-            });
-            if(!res.ok) throw new Error("Failed to fetch user info");
-            const data = await res.json();
-            if(data.length===0) throw new Error("User not found");
-            user_id = data[0].id;
-        }catch(err){
-            postsContainer.innerHTML = `<p style="color:red;">${err.message}</p>`;
-            console.error(err);
+async function fetchCurrentUser(){
+    try{
+        const res = await fetch("/me", { credentials: 'include' });
+        if(!res.ok) throw new Error("Not authenticated");
+        const data = await res.json();
+        username = data.username;
+        role = data.role;
+        user_id = data.id;
+
+        if(role !== "admin"){
+            document.getElementById('user-id-label').style.display = 'none';
         }
-    } else if(role === "admin"){
-        try{
-            const res = await fetch(`/users/`, {
-                headers: { 'Authorization':'Bearer '+token }
-            });
-            if(!res.ok) throw new Error("Failed to fetch users");
-            const data = await res.json();
-            data.forEach(u => { usersMap[u.id] = u.username });
-        }catch(err){
-            console.error("Error fetching users: ", err);
-        }
+    }catch(err){
+        window.location.href = '/';
     }
+}
+
+async function fetchUsersAndMap(){
+    const users = await fetchUsers(); 
+    usersMap = {};
+    users.forEach(user => { usersMap[user.id] = user.username; });
 }
 
 function renderPostsTable(posts){
@@ -126,7 +111,8 @@ function renderPostsTable(posts){
             ${role === "admin" ? `<td>${usersMap[post.user_id] || "Unknown"} (ID: ${post.user_id})</td>` : ""}
         `;
         tr.addEventListener("click", ()=>{
-            window.location.href = `/static/post_detail.html?post_id=${post.id}`;
+            sessionStorage.setItem("selected_post_id", post.id);
+            window.location.href = "/static/post_detail.html";
         });
         tbody.appendChild(tr);
     });
@@ -136,16 +122,12 @@ function renderPostsTable(posts){
 
 async function fetchPosts(){
     try{
-        let url = '';
         if(role === "admin"){
-            url = '/posts/';
-        } else {
-            url = `/user_posts/${username}`;
+            await fetchUsersAndMap(); 
         }
 
-        const res = await fetch(url, {
-            headers: { 'Authorization':'Bearer '+token }
-        });
+        const url = (role === "admin") ? '/posts/' : `/user_posts/${username}`;
+        const res = await fetch(url, { credentials: 'include' });
         if(!res.ok) throw new Error("Failed to fetch posts");
         const posts = await res.json();
 
@@ -174,10 +156,8 @@ createForm.addEventListener('submit', async(e)=>{
     try{
         const res = await fetch('/posts/',{
             method:'POST',
-            headers:{
-                'Content-Type':'application/json',
-                'Authorization':'Bearer '+token
-            },
+            credentials: 'include',
+            headers:{ 'Content-Type':'application/json' },
             body: JSON.stringify({ title, content, user_id: postUserId }) 
         });
 
@@ -195,7 +175,10 @@ createForm.addEventListener('submit', async(e)=>{
     }
 });
 
-fetchUserId().then(fetchPosts);
+(async ()=>{
+    await fetchCurrentUser();
+    fetchPosts();
+})();
 </script>
 </body>
 </html>
