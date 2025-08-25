@@ -20,3 +20,6 @@ psycopg2-binary>=2.9.9,<2.10
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 python-dotenv==1.0.1
+google-auth==2.35.0
+google-auth-oauthlib==1.2.1
+requests==2.32.3
