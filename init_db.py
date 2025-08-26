@@ -1,3 +1,4 @@
+"""Initialize the database by creating all tables defined in the models"""
 from database import Base, engine
 from models import *
 

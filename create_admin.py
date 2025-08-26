@@ -1,8 +1,10 @@
+"""Module to create a default admin user in the database"""
 from database import SessionLocal
 from models import User
 from main import hash_password, generate_email
 
 def create_admin():
+    """Create a default admin user if it does not already exist"""
     db = SessionLocal()
     try:
         username = "Admin User"
