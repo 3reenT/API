@@ -1,26 +1,28 @@
 """Main application module."""
+import os
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Annotated, Optional
+# 2. Third-party imports
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, status, Form, Response, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Annotated, Optional
 from passlib.context import CryptContext
-from enum import Enum
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-import models
-from database import engine, SessionLocal
 from google.oauth2 import id_token
 from google.auth.transport import requests
-import os
-from dotenv import load_dotenv
+import models
+from database import engine, SessionLocal
+
 
 load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -30,32 +32,38 @@ models.Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 class RoleEnum(str, Enum):
+    """Enumeration for user roles in the system"""
     admin = "admin"
     user = "user"
 
 class UserBase(BaseModel):
+    """Base schema for User data"""
     username: str
     password: str
     role: RoleEnum
 
 class PostBase(BaseModel):
+    """Base schema for Post data"""
     title: str
     content: str
     user_id: int
 
 class PostUpdate(BaseModel):
+    """Schema for updating Post data"""
     title: Optional[str] = None
     content: Optional[str] = None
     user_id: Optional[int] = None
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    """Create a new JWT access token"""
     to_encode = data.copy()
     expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def set_jwt_cookie(response: Response, user: models.User):
+    """ Generate a JWT for a user and store it in a secure HTTP-only cookie"""
     jwt_token = create_access_token({
         "sub": user.username,
         "email": user.email,
@@ -74,14 +82,17 @@ def set_jwt_cookie(response: Response, user: models.User):
 
 
 def hash_password(password: str):
+    """Hash a plain text password using the configured password hashing context"""
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password, hashed_password):
+    """ Verify if a plain text password matches its hashed version"""
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def generate_email(username: str) -> str:
+    """Generate an email address from a username (first and last name)"""
     parts = username.strip().split()
     if len(parts) < 2:
         raise ValueError("Username must contain first and last name")
@@ -90,23 +101,28 @@ def generate_email(username: str) -> str:
 
 
 def get_user_by_email(db: Session, email: str):
+    """Retrieve a user from the database by their email address"""
     return db.query(models.User).filter(models.User.email == email).first()
 
 
 def get_user_by_id(db: Session, user_id: int):
+    """Retrieve a user from the database by their ID"""
     return db.query(models.User).filter(models.User.id == user_id).first()
 
 
 def get_post_by_id(db: Session, post_id: int):
+    """Retrieve a post from the database by its ID"""
     return db.query(models.Post).filter(models.Post.id == post_id).first()
 
 
 def require_admin(user: models.User):
+    """ Ensure the current user has admin privileges"""
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin privileges required")
 
 
 def check_ownership_or_admin(user: models.User, owner_id: int):
+    """Verify if the current user is the owner of a resource or an admin"""
     if user.id != owner_id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -115,6 +131,7 @@ def create_new_user(db: Session,
                     email: str,
                     password: Optional[str],
                     role: str = "user"):
+    """Create and store a new user in the database"""
     hashed_password = hash_password(password) if password else None
     user = models.User(username=username,
                        email=email,
@@ -126,6 +143,7 @@ def create_new_user(db: Session,
     return user
 
 def get_db():
+    """Dependency function that provides a database session"""
     db = SessionLocal()
     try:
         yield db
@@ -135,6 +153,7 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
+    """Retrieve the currently authenticated user from the JWT token stored in cookies"""
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
@@ -151,7 +170,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == username,
                                         models.User.email == email).first()
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
+        raise HTTPException(status_code=401, detail="User not found") 
     return user
 
 
