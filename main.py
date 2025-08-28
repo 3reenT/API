@@ -3,7 +3,6 @@ import os
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Annotated, Optional
-# 2. Third-party imports
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, status, Form, Response, Request
 from fastapi.responses import HTMLResponse
@@ -22,7 +21,8 @@ load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -31,10 +31,12 @@ app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+
 class RoleEnum(str, Enum):
     """Enumeration for user roles in the system"""
-    admin = "admin"
-    user = "user"
+    ADMIN = "admin"
+    USER = "user"
+
 
 class UserBase(BaseModel):
     """Base schema for User data"""
@@ -42,11 +44,13 @@ class UserBase(BaseModel):
     password: str
     role: RoleEnum
 
+
 class PostBase(BaseModel):
     """Base schema for Post data"""
     title: str
     content: str
     user_id: int
+
 
 class PostUpdate(BaseModel):
     """Schema for updating Post data"""
@@ -61,6 +65,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     expire = datetime.now() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 def set_jwt_cookie(response: Response, user: models.User):
     """ Generate a JWT for a user and store it in a secure HTTP-only cookie"""
@@ -118,13 +123,15 @@ def get_post_by_id(db: Session, post_id: int):
 def require_admin(user: models.User):
     """ Ensure the current user has admin privileges"""
     if user.role != "admin":
-        raise HTTPException(status_code=403, detail="Admin privileges required")
+        raise HTTPException(
+            status_code=403, detail="Admin privileges required")
 
 
 def check_ownership_or_admin(user: models.User, owner_id: int):
     """Verify if the current user is the owner of a resource or an admin"""
     if user.id != owner_id and user.role != "admin":
         raise HTTPException(status_code=403, detail="Not allowed")
+
 
 def create_new_user(db: Session,
                     username: str,
@@ -142,6 +149,7 @@ def create_new_user(db: Session,
     db.refresh(user)
     return user
 
+
 def get_db():
     """Dependency function that provides a database session"""
     db = SessionLocal()
@@ -150,7 +158,9 @@ def get_db():
     finally:
         db.close()
 
+
 db_dependency = Annotated[Session, Depends(get_db)]
+
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
     """Retrieve the currently authenticated user from the JWT token stored in cookies"""
@@ -159,18 +169,21 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     try:
-        payload = jwt.decode(token,
-                             SECRET_KEY,
-                             algorithms=[ALGORITHM])
-        username,email = payload.get("sub"), payload.get("email")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username, email = payload.get("sub"), payload.get("email")
         if username is None or email is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    user = db.query(models.User).filter(models.User.username == username,
-                                        models.User.email == email).first()
+    except JWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid token") from exc
+
+    user = db.query(models.User).filter(
+        models.User.username == username,
+        models.User.email == email
+    ).first()
+
     if not user:
-        raise HTTPException(status_code=401, detail="User not found") 
+        raise HTTPException(status_code=401, detail="User not found")
+
     return user
 
 
@@ -189,29 +202,23 @@ async def login(response: Response,
     """Authenticate a user using email and password"""
     user = get_user_by_email(db, email)
     if not user or not user.password_hash or not verify_password(password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(
+            status_code=401, detail="Invalid email or password")
 
     set_jwt_cookie(response, user)
     return {
-    "message": (
-        f"Welcome {'Admin' if user.role.value == 'admin' else 'User'} "
-        f"{user.username}"
-    )
-}
+        "message": (
+            f"Welcome {'Admin' if user.role.value == 'admin' else 'User'} "
+            f"{user.username}"
+        )
+    }
+
 
 @app.post("/login/google")
 async def login_google(response: Response,
                        token: str = Form(...),
                        db: Session = Depends(get_db)):
     """Authenticate a user via Google OAuth token"""
-    print("Google token received:", token[:50], "...")
-
-    try:
-        decoded = jwt.decode(token, options={"verify_signature": False})
-        print("Decoded token payload:", decoded)
-        print("iat:", decoded.get("iat"), "exp:", decoded.get("exp"))
-    except Exception as e:
-        print("Failed to decode token:", e)
 
     try:
         idinfo = id_token.verify_oauth2_token(
@@ -234,16 +241,16 @@ async def login_google(response: Response,
                 db,
                 username=google_name,
                 email=google_email,
-                password="ggg",
+                password="GGG",
                 role="user"
             )
 
         set_jwt_cookie(response, user)
         return {"message": f"Welcome {user.username} via Google"}
 
-    except ValueError as e:
-        print("Google token verification failed:", e)
-        raise HTTPException(status_code=400, detail="Google token verification failed")
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400, detail="Google token verification failed") from exc
 
 
 @app.post("/logout")
@@ -263,7 +270,7 @@ async def create_user(user: UserBase,
     try:
         generated_email = generate_email(user.username)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     db_user = create_new_user(db,
                               username=user.username,
@@ -304,6 +311,7 @@ async def get_me(current_user: models.User = Depends(get_current_user)):
         "role": current_user.role.value
     }
 
+
 @app.post("/posts/", status_code=status.HTTP_201_CREATED)
 async def create_post(post: PostBase,
                       db: db_dependency,
@@ -339,7 +347,8 @@ async def get_user_posts(
     current_user: models.User = Depends(get_current_user)
 ):
     """Retrieve posts by a specific username"""
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter(
+        models.User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -351,6 +360,7 @@ async def get_user_posts(
 
     posts = db.query(models.Post).filter(models.Post.user_id == user.id).all()
     return posts
+
 
 @app.get("/posts/{post_id}", status_code=status.HTTP_200_OK)
 async def read_post(
@@ -385,7 +395,8 @@ async def update_post(post_id: int,
     if updated_post.user_id is not None:
         require_admin(current_user)
         if not get_user_by_id(db, updated_post.user_id):
-            raise HTTPException(status_code=400, detail="User ID does not exist")
+            raise HTTPException(
+                status_code=400, detail="User ID does not exist")
         db_post.user_id = updated_post.user_id
 
     db.commit()
