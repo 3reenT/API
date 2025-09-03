@@ -6,8 +6,8 @@ from database import Base
 
 class RoleEnum(str, enum.Enum):
     """Enumeration for user roles in the system."""
-    admin = "admin"
-    user = "user"
+    ADMIN = "admin"
+    USER = "user"
 
 
 class User(Base):

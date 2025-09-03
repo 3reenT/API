@@ -1,8 +1,8 @@
 """Main application module."""
 import os
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import Annotated, Optional
+import logging
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, status, Form, Response, Request
 from fastapi.responses import HTMLResponse
@@ -15,6 +15,23 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 import models
 from database import engine, SessionLocal
+from models import RoleEnum
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s:%(name)s:%(message)s')
+
+file_handler = logging.FileHandler('sample.log')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler()
+stream_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 
 load_dotenv()
@@ -30,12 +47,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
-
-
-class RoleEnum(str, Enum):
-    """Enumeration for user roles in the system"""
-    ADMIN = "admin"
-    USER = "user"
 
 
 class UserBase(BaseModel):
@@ -227,7 +238,7 @@ async def login_google(response: Response,
             GOOGLE_CLIENT_ID,
             clock_skew_in_seconds=10
         )
-        print("Verified Google token:", idinfo)
+        logger.debug("Verified Google token: %s", idinfo)
 
         google_email = idinfo.get("email")
         google_name = idinfo.get("name", "GoogleUser")
@@ -241,7 +252,7 @@ async def login_google(response: Response,
                 db,
                 username=google_name,
                 email=google_email,
-                password="GGG",
+                password=None,
                 role="user"
             )
 
